@@ -88,6 +88,7 @@ class FundAnalysis {
   final double? estimatedNav; // 估算净值
   final double? estimatedChange; // 估算涨幅
   final String? dataDate;
+  final bool isFromNetwork; // 是否从网络获取到真实数据
 
   // 回报
   final double? ret1m;
@@ -147,6 +148,7 @@ class FundAnalysis {
     this.stockPosition,
     this.managementFee,
     this.custodyFee,
+    this.isFromNetwork = false,
   });
 
   String get ratingDisplay {

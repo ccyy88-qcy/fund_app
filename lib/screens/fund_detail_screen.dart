@@ -186,9 +186,30 @@ class FundDetailScreen extends StatelessWidget {
             if (a.dataDate != null)
               Padding(
                 padding: const EdgeInsets.only(top: 6),
-                child: Text(
-                  '数据日期: ${a.dataDate}',
-                  style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.5)),
+                child: Row(
+                  children: [
+                    Text(
+                      '数据日期: ${a.dataDate}',
+                      style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.5)),
+                    ),
+                    const Spacer(),
+                    if (!a.isFromNetwork)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.wifi_off, size: 10, color: Colors.white),
+                            SizedBox(width: 3),
+                            Text('离线数据', style: TextStyle(fontSize: 9, color: Colors.white)),
+                          ],
+                        ),
+                      ),
+                  ],
                 ),
               ),
           ],

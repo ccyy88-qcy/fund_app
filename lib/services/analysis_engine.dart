@@ -378,6 +378,7 @@ class AnalysisEngine {
       peGrade: peGrade,
       pbGrade: pbGrade,
       signal: signal,
+      isFromNetwork: navData.isNotEmpty && navData.length > 5,
     );
   }
 }
