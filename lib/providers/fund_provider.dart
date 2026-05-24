@@ -133,16 +133,45 @@ class FundProvider extends ChangeNotifier {
       // 6. PE/PB估值（ETF专用，内置模拟数据）
       int? pePct, pbPct;
       if (isEtfType) {
-        // 使用内置估值数据
         final val = _getValuationPercentile(cleanCode);
         pePct = val['pe'];
         pbPct = val['pb'];
       }
       
-      // 7. 日涨跌幅（从估值数据或排行获取）
+      // 7. 日涨跌幅（多源兜底）
       double? dailyChange;
-      if (estimation != null) {
+      
+      // 方案A：从净值数据的 equityReturn 字段（最准确）
+      if (pingzhong.containsKey('navHistory')) {
+        final navRaw = pingzhong['navHistory'] as List;
+        if (navRaw.isNotEmpty) {
+          final last = navRaw.last as Map;
+          final eqRet = last['equityReturn'];
+          if (eqRet != null) {
+            dailyChange = double.tryParse(eqRet.toString());
+          }
+        }
+      }
+      
+      // 方案B：从实时估值API
+      if (dailyChange == null && estimation != null) {
         dailyChange = double.tryParse(estimation['gszzl']?.toString() ?? '');
+      }
+      
+      // 方案C：从ETF K线最后两日计算
+      if (dailyChange == null && _klineData.length >= 2) {
+        final last2 = _klineData.sublist(_klineData.length - 2);
+        if (last2[0].close > 0) {
+          dailyChange = (last2[1].close / last2[0].close - 1) * 100;
+        }
+      }
+      
+      // 方案D：从净值最后两日计算
+      if (dailyChange == null && _navData.length >= 2) {
+        final last2 = _navData.sublist(_navData.length - 2);
+        if (last2[0].nav > 0) {
+          dailyChange = (last2[1].nav / last2[0].nav - 1) * 100;
+        }
       }
       
       // 8. 构建FundBasic

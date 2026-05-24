@@ -180,8 +180,19 @@ class FundDetailScreen extends StatelessWidget {
                           color: Colors.white,
                         ),
                       ),
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '暂无数据',
+                        style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.6)),
+                      ),
                     ),
-                ],
               ),
             if (a.dataDate != null)
               Padding(
