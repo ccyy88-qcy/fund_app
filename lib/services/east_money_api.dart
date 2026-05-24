@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:http/http.dart' as http;
+import 'package:http/io_client.dart';
 import 'dart:convert';
 import 'dart:math';
 
@@ -26,8 +28,8 @@ class ApiConfig {
   
   /// 创建带连接超时的 HTTP 客户端
   static http.Client createClient() {
-    return http.IOClient(
-      HttpClient()
+      return IOClient(
+        HttpClient()
         ..connectionTimeout = connectTimeout
         ..idleTimeout = const Duration(seconds: 15),
     );

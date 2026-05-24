@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/fund_basic.dart';
 import '../models/fund_analysis.dart';
