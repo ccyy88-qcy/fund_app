@@ -18,8 +18,12 @@ jobs:
           flutter-version: '3.27.x'
           channel: 'stable'
 
-      - name: Flutter pub get
-        run: flutter pub get
+      - name: Generate platform files
+        run: |
+          rm -rf android ios test
+          flutter create --platforms=android .
+          # 恢复我们的 lib/ 文件（flutter create 不会覆盖已有 lib/）
+          flutter pub get
 
       - name: Build APK (release)
         run: flutter build apk --release --split-per-abi
