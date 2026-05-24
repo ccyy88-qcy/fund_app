@@ -41,6 +41,7 @@ class EastMoneyApi {
   static final _client = ApiConfig.createClient();
 
   /// 获取基金历史净值（pingzhongdata）
+  /// 注意：东方财富 API 返回 GBK 编码的 JS 文件，需手动 UTF-8 解码
   static Future<Map<String, dynamic>> fetchPingzhongData(String code) async {
     final url = '${ApiConfig.eastMoneyPingzhong}/$code.js';
     try {
@@ -51,45 +52,77 @@ class EastMoneyApi {
       
       if (resp.statusCode != 200) return {};
       
-      final text = resp.body;
+      // 强制 UTF-8 解码，避免乱码
+      final text = utf8.decode(resp.bodyBytes);
       final result = <String, dynamic>{};
       
-      // 解析净值趋势
-      final navMatch = RegExp(r'var Data_netWorthTrend = (\[.*?\]);', dotAll: true).firstMatch(text);
-      if (navMatch != null) {
-        final raw = jsonDecode(navMatch.group(1)!) as List;
-        result['navHistory'] = raw;
+      try {
+        // 解析净值趋势（使用非贪婪+平衡匹配）
+        final navMatch = RegExp(r'var Data_netWorthTrend = (\[[\s\S]*?\n\]);', multiLine: true).firstMatch(text);
+        if (navMatch != null) {
+          final raw = jsonDecode(navMatch.group(1)!) as List;
+          result['navHistory'] = raw;
+        } else {
+          // 备选正则
+          final navMatch2 = RegExp(r'Data_netWorthTrend\s*=\s*(\[[\s\S]*?\])\s*;').firstMatch(text);
+          if (navMatch2 != null) {
+            final raw = jsonDecode(navMatch2.group(1)!) as List;
+            result['navHistory'] = raw;
+          }
+        }
+      } catch (e) {
+        // NAV 解析失败不阻断
       }
       
-      // 解析累计净值趋势
-      final accNavMatch = RegExp(r'var Data_ACWorthTrend = (\[.*?\]);', dotAll: true).firstMatch(text);
-      if (accNavMatch != null) {
-        result['accNavHistory'] = jsonDecode(accNavMatch.group(1)!);
-      }
+      try {
+        // 解析累计净值
+        final accNavMatch = RegExp(r'Data_ACWorthTrend\s*=\s*(\[[\s\S]*?\])\s*;').firstMatch(text);
+        if (accNavMatch != null) {
+          result['accNavHistory'] = jsonDecode(accNavMatch.group(1)!);
+        }
+      } catch (_) {}
       
-      // 解析基金名称
-      final nameMatch = RegExp(r'var fS_name = "(.+?)"').firstMatch(text);
-      if (nameMatch != null) result['name'] = nameMatch.group(1);
+      // 基金名称（强制 UTF-8 已确保不乱码）
+      try {
+        final nameMatch = RegExp(r'var fS_name = "([^"]+)"').firstMatch(text);
+        if (nameMatch != null) result['name'] = nameMatch.group(1)!;
+      } catch (_) {}
       
-      // 解析基金代码
-      final codeMatch = RegExp(r'var fS_code = "(.+?)"').firstMatch(text);
-      if (codeMatch != null) result['code'] = codeMatch.group(1);
+      // 基金代码
+      try {
+        final codeMatch = RegExp(r'fS_code = "([^"]+)"').firstMatch(text);
+        if (codeMatch != null) result['code'] = codeMatch.group(1)!;
+      } catch (_) {}
       
-      // 基金类型
-      final typeMatch = RegExp(r'var fS_type = "(.+?)"').firstMatch(text);
-      if (typeMatch != null) result['type'] = typeMatch.group(1);
+      // 收益率（直接从JS变量获取，准确）
+      try {
+        final s1y = RegExp(r'syl_1n="([\d\.\-]+)"').firstMatch(text);
+        if (s1y != null) result['syl_1y'] = double.tryParse(s1y.group(1)!);
+        final s6y = RegExp(r'syl_6y="([\d\.\-]+)"').firstMatch(text);
+        if (s6y != null) result['syl_6m'] = double.tryParse(s6y.group(1)!);
+        final s3y = RegExp(r'syl_3y="([\d\.\-]+)"').firstMatch(text);
+        if (s3y != null) result['syl_3m'] = double.tryParse(s3y.group(1)!);
+        final s1m = RegExp(r'syl_1y="([\d\.\-]+)"').firstMatch(text);
+        if (s1m != null) result['syl_1m'] = double.tryParse(s1m.group(1)!);
+      } catch (_) {}
       
       // 基金经理
-      final mgrMatch = RegExp(r'var基金经理 = "(.+?)"').firstMatch(text);
-      if (mgrMatch != null) result['manager'] = mgrMatch.group(1);
+      try {
+        final mgrMatch = RegExp(r'var基金经理 = "([^"]+)"').firstMatch(text);
+        if (mgrMatch != null) result['manager'] = mgrMatch.group(1)!;
+      } catch (_) {}
       
       // 成立日期
-      final incepMatch = RegExp(r'var成立日期 = "(.+?)"').firstMatch(text);
-      if (incepMatch != null) result['inceptionDate'] = incepMatch.group(1);
+      try {
+        final incepMatch = RegExp(r'var成立日期 = "([^"]+)"').firstMatch(text);
+        if (incepMatch != null) result['inceptionDate'] = incepMatch.group(1)!;
+      } catch (_) {}
       
       // 规模
-      final sizeMatch = RegExp(r'var基金规模 = "(.+?)"').firstMatch(text);
-      if (sizeMatch != null) result['fundSize'] = sizeMatch.group(1);
+      try {
+        final sizeMatch = RegExp(r'var基金规模 = "([^"]+)"').firstMatch(text);
+        if (sizeMatch != null) result['fundSize'] = sizeMatch.group(1)!;
+      } catch (_) {}
       
       return result;
     } catch (_) {

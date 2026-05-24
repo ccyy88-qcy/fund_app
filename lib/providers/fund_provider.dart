@@ -114,8 +114,9 @@ class FundProvider extends ChangeNotifier {
       
       // 4. 判断是否是ETF，如果是则获取K线
       _klineData = [];
-      final name = pingzhong['name'] ?? FundNameLookup.lookup(cleanCode);
-      final type = pingzhong['type'] ?? FundNameLookup.lookupType(cleanCode);
+      final name = pingzhong['name'] as String? ?? FundNameLookup.lookup(cleanCode);
+      final type = FundNameLookup.lookupType(cleanCode); // API 不含 type
+      final code = pingzhong['code'] as String? ?? cleanCode;
       final isEtfType = type.toString().contains('ETF');
       
       if (isEtfType) {
