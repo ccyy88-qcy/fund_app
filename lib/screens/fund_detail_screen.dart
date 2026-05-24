@@ -303,7 +303,7 @@ class FundDetailScreen extends StatelessWidget {
     }
     
     // 取最近200个点
-    final points = navData.length > 200 
+    final List<NavData> points = navData.length > 200 
         ? navData.sublist(navData.length - 200) 
         : navData;
     
@@ -387,7 +387,7 @@ class FundDetailScreen extends StatelessWidget {
           // MA10
           if (ma10Series != null)
             LineChartBarData(
-              spots: List.generate(ma10Series.length, (i) => FlSpot(i.toDouble(), ma10Series[i])),
+              spots: List.generate(ma10Series.length, (i) => FlSpot(i.toDouble(), ma10Series![i])),
               isCurved: true,
               color: Colors.orange,
               barWidth: 1.5,
@@ -396,7 +396,7 @@ class FundDetailScreen extends StatelessWidget {
           // MA60
           if (ma60Series != null)
             LineChartBarData(
-              spots: List.generate(ma60Series.length, (i) => FlSpot(i.toDouble(), ma60Series[i])),
+              spots: List.generate(ma60Series.length, (i) => FlSpot(i.toDouble(), ma60Series![i])),
               isCurved: true,
               color: Colors.pink,
               barWidth: 1.5,

@@ -1,3 +1,7 @@
+import 'fund_basic.dart';
+import 'nav_data.dart';
+import 'kline_data.dart';
+
 /// 交易信号
 class TradeSignal {
   final String action; // 买入 / 持有 / 卖出 / 观望
