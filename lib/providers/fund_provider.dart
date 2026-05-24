@@ -174,7 +174,13 @@ class FundProvider extends ChangeNotifier {
         }
       }
       
-      // 8. 构建FundBasic
+      // 8. API提供的阶段回报（和东方财富/支付宝一致）
+      final apiRet1m = pingzhong['syl_1m'] as double?;
+      final apiRet3m = pingzhong['syl_3m'] as double?;
+      final apiRet6m = pingzhong['syl_6m'] as double?;
+      final apiRet1y = pingzhong['syl_1y'] as double?;
+      
+      // 9. 构建FundBasic
       final basic = FundBasic(
         code: cleanCode,
         name: name is String ? name : FundNameLookup.lookup(cleanCode),
@@ -183,7 +189,7 @@ class FundProvider extends ChangeNotifier {
         inceptionDate: pingzhong['inceptionDate'] as String?,
       );
       
-      // 9. 全量分析
+      // 10. 全量分析
       _analysis = AnalysisEngine.analyze(
         basic,
         _navData,
@@ -192,6 +198,10 @@ class FundProvider extends ChangeNotifier {
         dailyChange,
         pePct,
         pbPct,
+        apiRet1m: apiRet1m,
+        apiRet3m: apiRet3m,
+        apiRet6m: apiRet6m,
+        apiRet1y: apiRet1y,
       );
       
       // 10. 记录最近查询

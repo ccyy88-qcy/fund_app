@@ -212,6 +212,10 @@ class AnalysisEngine {
     double? dailyChange,
     int? pePercentile,
     int? pbPercentile,
+    {double? apiRet1m,
+     double? apiRet3m,
+     double? apiRet6m,
+     double? apiRet1y,}
   ) {
     final closes = navData.map((n) => n.nav).toList();
     final isSame = klineData != null && klineData.length == navData.length;
@@ -224,11 +228,11 @@ class AnalysisEngine {
         ? calcCCIWithKline(klineData)
         : calcCCI(closes);
 
-    // 回报
-    final ret1m = calcReturn(closes, 22);
-    final ret3m = calcReturn(closes, 66);
-    final ret6m = calcReturn(closes, 132);
-    final ret1y = calcReturn(closes, 252);
+    // 回报（优先用API数据，与东方财富/支付宝一致）
+    final ret1m = apiRet1m ?? calcReturn(closes, 22);
+    final ret3m = apiRet3m ?? calcReturn(closes, 66);
+    final ret6m = apiRet6m ?? calcReturn(closes, 132);
+    final ret1y = apiRet1y ?? calcReturn(closes, 252);
     final ret2y = calcReturn(closes, 504);
     final ret3y = calcReturn(closes, 756);
     final retYtd = calcYtdReturn(navData);
