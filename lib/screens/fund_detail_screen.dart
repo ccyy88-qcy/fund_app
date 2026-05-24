@@ -534,35 +534,69 @@ class FundDetailScreen extends StatelessWidget {
 
   Widget _buildMaCard(BuildContext context, FundAnalysis a) {
     final ma = a.ma!;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(children: [Icon(Icons.show_chart, size: 16, color: Color(0xFF9C27B0)), SizedBox(width:6), Text('均线分析', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A3C6E)))]),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 16,
-              runSpacing: 8,
-              children: [
-                _maItem('MA10', ma.ma10, a.latestNav),
-                _maItem('MA60', ma.ma60, a.latestNav),
-                _maItem('乖离率', ma.deviationPercent, null, suffix: '%'),
-                InfoChip(
-                  label: ma.isGoldenCross ? '金叉 ↑' : ma.isDeathCross ? '死叉 ↓' : '-',
-                  color: ma.isGoldenCross ? Colors.green : ma.isDeathCross ? Colors.red : Colors.grey,
-                ),
-                InfoChip(
-                  label: ma.position == 'above' ? '↑ 线上' : '↓ 线下',
-                  color: ma.position == 'above' ? Colors.green : Colors.red,
-                ),
-              ],
-            ),
-          ],
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF9C27B0).withValues(alpha: 0.2)),
+        gradient: LinearGradient(
+          colors: [const Color(0xFF9C27B0).withValues(alpha: 0.05), Colors.white],
+          begin: Alignment.topLeft, end: Alignment.bottomRight,
         ),
       ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Icon(Icons.show_chart, size: 16, color: const Color(0xFF9C27B0)),
+            const SizedBox(width: 6),
+            const Text('均线 / CCI 分析', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A3C6E))),
+          ]),
+          const SizedBox(height: 12),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            _maItem('MA10', ma.ma10, a.latestNav),
+            _maItem('MA60', ma.ma60, a.latestNav),
+            _maItem('乖离率', ma.deviationPercent, null, suffix: '%'),
+            InfoChip(label: ma.isGoldenCross ? '金叉 ↑' : ma.isDeathCross ? '死叉 ↓' : '横盘', color: ma.isGoldenCross ? Colors.green : ma.isDeathCross ? Colors.red : Colors.grey),
+            InfoChip(label: ma.position == 'above' ? '↑ 线上' : '↓ 线下', color: ma.position == 'above' ? Colors.green : Colors.red),
+            if (a.cci != null)
+              _cciChip(a.cci!),
+          ]),
+          if (a.cci != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              _cciInterpretation(a.cci!),
+              style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+            ),
+          ],
+        ],
+      ),
     );
+  }
+
+  Widget _cciChip(double cci) {
+    final color = cci > 100 ? Colors.red : (cci < -100 ? Colors.green : Colors.orange);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Text(
+        'CCI: ${cci.toStringAsFixed(1)}',
+        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color),
+      ),
+    );
+  }
+
+  String _cciInterpretation(double cci) {
+    if (cci > 200) return '⚠️ CCI超买(>200)，短期可能回调';
+    if (cci > 100) return '⚡ CCI进入超买区(>100)，注意风险';
+    if (cci < -200) return '💎 CCI超卖(< -200)，短期可能反弹';
+    if (cci < -100) return '🔍 CCI进入超卖区(< -100)，关注反弹机会';
+    if (cci > 0) return '📈 CCI为正，短期偏强';
+    return '📉 CCI为负，短期偏弱';
   }
 
   Widget _maItem(String label, double? value, double? compare, {String suffix = ''}) {

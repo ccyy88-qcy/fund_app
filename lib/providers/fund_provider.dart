@@ -206,6 +206,12 @@ class FundProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
   }
+
+  /// 删除历史查询记录
+  void removeRecent(String code) {
+    _recentCodes.remove(code);
+    notifyListeners();
+  }
 }
 
 /// FundProvider单例

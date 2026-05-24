@@ -120,6 +120,9 @@ class FundAnalysis {
   // 费率
   final double? managementFee;
   final double? custodyFee;
+  
+  // 技术指标
+  final double? cci; // CCI指标（周期20）
 
   FundAnalysis({
     required this.basic,
@@ -148,6 +151,7 @@ class FundAnalysis {
     this.stockPosition,
     this.managementFee,
     this.custodyFee,
+    this.cci,
     this.isFromNetwork = false,
   });
 
