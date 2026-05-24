@@ -193,7 +193,8 @@ class FundDetailScreen extends StatelessWidget {
                         style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.6)),
                       ),
                     ),
-              ),
+                  ],
+                ),
             if (a.dataDate != null)
               Padding(
                 padding: const EdgeInsets.only(top: 6),
