@@ -44,6 +44,21 @@ class FundProvider extends ChangeNotifier {
     _analysis = null;
     notifyListeners();
     
+    // 整体超时30秒
+    try {
+      await _doSearch(cleanCode).timeout(const Duration(seconds: 30));
+    } on TimeoutException {
+      _isLoading = false;
+      _error = '请求超时，请检查网络后重试';
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _error = '获取数据失败：$e';
+      notifyListeners();
+    }
+  }
+
+  Future<void> _doSearch(String cleanCode) async {
     try {
       // 1. 获取pingzhongdata（基础信息+净值历史）
       final pingzhong = await EastMoneyApi.fetchPingzhongData(cleanCode);

@@ -13,20 +13,30 @@ class ApiConfig {
 
   // 新浪K线
   static const String sinaKline = 'https://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData';
-
+  
   // 妙想搜索
   static const String mxSearch = 'https://search-api.10jqka.com.cn/search';
   
   // 东方财富ETF实时行情
   static const String eastMoneyEtf = 'https://push2.eastmoney.com/api/qt/stock/get';
 
-  static const Duration timeout = Duration(seconds: 15);
+  static const Duration readTimeout = Duration(seconds: 10);
+  static const Duration connectTimeout = Duration(seconds: 8);
   static const String userAgent = 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36';
+  
+  /// 创建带连接超时的 HTTP 客户端
+  static http.Client createClient() {
+    return http.IOClient(
+      HttpClient()
+        ..connectionTimeout = connectTimeout
+        ..idleTimeout = const Duration(seconds: 15),
+    );
+  }
 }
 
 /// 东方财富基金数据API
 class EastMoneyApi {
-  static final _client = http.Client();
+  static final _client = ApiConfig.createClient();
 
   /// 获取基金历史净值（pingzhongdata）
   static Future<Map<String, dynamic>> fetchPingzhongData(String code) async {
@@ -35,7 +45,7 @@ class EastMoneyApi {
       final resp = await _client.get(
         Uri.parse(url),
         headers: {'User-Agent': ApiConfig.userAgent},
-      ).timeout(ApiConfig.timeout);
+      ).timeout(ApiConfig.readTimeout);
       
       if (resp.statusCode != 200) return {};
       
@@ -94,7 +104,7 @@ class EastMoneyApi {
         final resp = await _client.get(
           Uri.parse(url),
           headers: {'User-Agent': ApiConfig.userAgent},
-        ).timeout(ApiConfig.timeout);
+        ).timeout(ApiConfig.readTimeout);
         
         if (resp.statusCode != 200) break;
         
@@ -129,7 +139,7 @@ class EastMoneyApi {
       final resp = await _client.get(
         Uri.parse(url),
         headers: {'User-Agent': ApiConfig.userAgent, 'Referer': 'https://fund.eastmoney.com/'},
-      ).timeout(ApiConfig.timeout);
+      ).timeout(ApiConfig.readTimeout);
       
       if (resp.statusCode != 200) return [];
       
@@ -177,7 +187,7 @@ class EastMoneyApi {
       final resp = await _client.get(
         Uri.parse(url),
         headers: {'User-Agent': ApiConfig.userAgent, 'Referer': 'https://fund.eastmoney.com/'},
-      ).timeout(ApiConfig.timeout);
+      ).timeout(ApiConfig.readTimeout);
       
       if (resp.statusCode != 200) return null;
       
@@ -194,7 +204,7 @@ class EastMoneyApi {
 
 /// 新浪K线API
 class SinaKlineApi {
-  static final _client = http.Client();
+  static final _client = ApiConfig.createClient();
 
   /// 获取ETF K线数据
   /// market: 'sh' 或 'sz'
@@ -204,7 +214,7 @@ class SinaKlineApi {
       final resp = await _client.get(
         Uri.parse(url),
         headers: {'User-Agent': ApiConfig.userAgent},
-      ).timeout(ApiConfig.timeout);
+      ).timeout(ApiConfig.readTimeout);
       
       if (resp.statusCode != 200) return [];
       
