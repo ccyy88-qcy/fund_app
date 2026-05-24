@@ -199,7 +199,7 @@ class AnalysisEngine {
     final std = sqrt(variance);
     final upper = ma + 2*std;
     final lower = ma - 2*std;
-    final bw = ma > 0 ? (upper-lower)/ma*100 : 0;
+    final bw = ma > 0 ? (upper-lower)/ma*100 : 0.0;
     return BollingerData(upper: upper, middle: ma, lower: lower, bandwidth: bw);
   }
 
