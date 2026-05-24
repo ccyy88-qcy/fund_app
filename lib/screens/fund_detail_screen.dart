@@ -100,90 +100,95 @@ class FundDetailScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final basic = a.basic;
     
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        gradient: LinearGradient(
+          colors: [const Color(0xFF1A3C6E), const Color(0xFF2B5EA7)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1A3C6E).withValues(alpha: 0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(4),
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(5),
                   ),
                   child: Text(
                     basic.code,
-                    style: TextStyle(
-                      fontSize: 12,
+                    style: const TextStyle(
+                      fontSize: 13,
                       fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onPrimaryContainer,
+                      color: Colors.white,
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 if (basic.isEtf)
-                  _buildTag('ETF', Colors.blue[100]!, Colors.blue[800]!),
+                  _buildWhiteTag('ETF'),
                 if (basic.isActiveFund)
-                  _buildTag('主动', Colors.green[100]!, Colors.green[800]!),
+                  _buildWhiteTag('主动'),
                 if (basic.isQdii)
-                  _buildTag('QDII', Colors.orange[100]!, Colors.orange[800]!),
+                  _buildWhiteTag('QDII'),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Text(
               basic.name,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
             ),
-            const SizedBox(height: 4),
-            Text(basic.type, style: TextStyle(fontSize: 13, color: Colors.grey[600])),
-            const SizedBox(height: 8),
-            
+            const SizedBox(height: 2),
+            Text(basic.type, style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.7))),
+            const SizedBox(height: 12),
             // 实时净值
             if (a.latestNav != null)
               Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
                     a.latestNav!.toStringAsFixed(4),
-                    style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 10),
                   if (a.dailyChange != null)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: a.dailyChange! >= 0 
-                            ? Colors.red[50] 
-                            : Colors.green[50],
-                        borderRadius: BorderRadius.circular(4),
+                        color: (a.dailyChange! >= 0 ? Colors.red : Colors.green).withValues(alpha: 0.8),
+                        borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         '${a.dailyChange! >= 0 ? '+' : ''}${a.dailyChange!.toStringAsFixed(2)}%',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: a.dailyChange! >= 0 ? Colors.red[700] : Colors.green[700],
+                          color: Colors.white,
                         ),
                       ),
                     ),
                 ],
               ),
-            if (a.estimatedNav != null && a.dailyChange == null)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  '估算净值: ${a.estimatedNav!.toStringAsFixed(4)}  |  ${a.estimatedChange?.toStringAsFixed(2)}%',
-                  style: TextStyle(fontSize: 13, color: Colors.grey[500]),
-                ),
-              ),
             if (a.dataDate != null)
               Padding(
-                padding: const EdgeInsets.only(top: 4),
+                padding: const EdgeInsets.only(top: 6),
                 child: Text(
                   '数据日期: ${a.dataDate}',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+                  style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.5)),
                 ),
               ),
           ],
@@ -192,20 +197,33 @@ class FundDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTag(String text, Color bg, Color fg) {
+  Widget _buildWhiteTag(String text) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
-        color: bg,
+        color: Colors.white.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(4),
       ),
-      child: Text(text, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: fg)),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white),
+      ),
     );
   }
 
   Widget _buildSignalCard(BuildContext context, FundAnalysis a) {
     final signal = a.signal!;
-    return Card(
+    final sigColor = Color(int.parse(signal.color.replaceFirst('#', '0xFF')));
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: sigColor.withValues(alpha: 0.3)),
+        gradient: LinearGradient(
+          colors: [sigColor.withValues(alpha: 0.08), Colors.white],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -214,7 +232,13 @@ class FundDetailScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('操作信号', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  Row(
+                    children: [
+                      Icon(Icons.notifications_active, size: 16, color: sigColor),
+                      const SizedBox(width: 4),
+                      const Text('操作信号', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                    ],
+                  ),
                   const SizedBox(height: 8),
                   SignalBadge(signal: signal),
                   const SizedBox(height: 4),
@@ -222,13 +246,19 @@ class FundDetailScreen extends StatelessWidget {
                 ],
               ),
             ),
-            Container(width: 1, height: 48, color: Colors.grey[300]),
+            Container(width: 1, height: 60, color: Colors.grey[200]),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('估值评级', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  Row(
+                    children: [
+                      Icon(Icons.speed, size: 16, color: _ratingColor(a.peGrade?.grade ?? '')),
+                      const SizedBox(width: 4),
+                      const Text('估值评级', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                    ],
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     a.ratingDisplay,
@@ -238,6 +268,14 @@ class FundDetailScreen extends StatelessWidget {
                       color: _ratingColor(a.peGrade?.grade ?? ''),
                     ),
                   ),
+                  if (a.peGrade != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        'PE ${a.peGrade!.percentile}%分位',
+                        style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -263,7 +301,7 @@ class FundDetailScreen extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Text('净值走势', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                Row(children: [Icon(Icons.timeline, size: 16, color: Color(0xFF1976D2)), SizedBox(width:6), Text('净值走势', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A3C6E)))]),
                 const Spacer(),
                 if (a.ma != null && a.ma!.ma10 != null)
                   _legendDot('MA10', Colors.orange),
@@ -414,7 +452,7 @@ class FundDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('阶段回报', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            Row(children: [Icon(Icons.bar_chart, size: 16, color: Color(0xFF2196F3)), SizedBox(width:6), Text('阶段回报', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A3C6E)))]),
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
@@ -450,7 +488,7 @@ class FundDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('风险指标', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            Row(children: [Icon(Icons.shield_outlined, size: 16, color: Color(0xFFFF5722)), SizedBox(width:6), Text('风险指标', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A3C6E)))]),
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
@@ -481,7 +519,7 @@ class FundDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('均线分析', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            Row(children: [Icon(Icons.show_chart, size: 16, color: Color(0xFF9C27B0)), SizedBox(width:6), Text('均线分析', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A3C6E)))]),
             const SizedBox(height: 12),
             Wrap(
               spacing: 16,
@@ -535,7 +573,7 @@ class FundDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('其他信息', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            Row(children: [Icon(Icons.info_outline, size: 16, color: Color(0xFF607D8B)), SizedBox(width:6), Text('其他信息', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A3C6E)))]),
             const SizedBox(height: 8),
             if (a.fundSize != null)
               _infoRow('基金规模', '${a.fundSize!.toStringAsFixed(2)}亿'),
