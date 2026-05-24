@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../providers/fund_provider.dart';
 import '../models/fund_analysis.dart';
 import '../models/nav_data.dart';
+import '../models/technical_data.dart';
 import '../widgets/metric_card.dart';
 import '../widgets/signal_badge.dart';
 
