@@ -77,8 +77,8 @@ class AnalysisEngine {
   static double? calcMaxDrawdown(List<double> closes) {
     if (closes.isEmpty) return null;
     double peak = closes[0], maxDd = 0;
-    for (final c in closes) { peak = max(peak, c); maxDd = max(maxDd, (peak - c) / peak * 100); }
-    return maxDd;
+    for (final c in closes) { peak = max(peak, c); maxDd = max(maxDd, (peak - c) / peak); }
+    return -maxDd * 100;
   }
 
   static double? calcCurrentDrawdown(List<double> closes) {
@@ -90,8 +90,8 @@ class AnalysisEngine {
     if (closes.length < window) return null;
     final subset = closes.sublist(closes.length - window);
     double peak = subset[0], maxDd = 0;
-    for (final c in subset) { peak = max(peak, c); maxDd = max(maxDd, (peak - c) / peak * 100); }
-    return maxDd;
+    for (final c in subset) { peak = max(peak, c); maxDd = max(maxDd, (peak - c) / peak); }
+    return -maxDd * 100;
   }
 
   static double? calcSharpe(List<double> closes, {double riskFreeRate = 2.5}) {
