@@ -142,6 +142,9 @@ class FundAnalysis {
   final int? maxConsecutiveUp;  // 最大连涨天数
   final int? maxConsecutiveDown; // 最大连跌天数
   final int? recoveryDays; // 回撤恢复天数
+  
+  // 图表数据
+  final ChartData? chartData;
 
   FundAnalysis({
     required this.basic,
@@ -181,6 +184,7 @@ class FundAnalysis {
     this.maxConsecutiveUp,
     this.maxConsecutiveDown,
     this.recoveryDays,
+    this.chartData,
     this.isFromNetwork = false,
   });
 

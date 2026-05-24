@@ -53,3 +53,54 @@ class CategoryRank {
 
   CategoryRank({required this.category, required this.rank, required this.total});
 }
+
+// ─── 图表数据 ───
+
+/// RSI 历史序列点
+class RsiPoint {
+  final int index; // K线索引（天数偏移）
+  final double value;
+  RsiPoint({required this.index, required this.value});
+}
+
+/// MACD 历史序列点
+class MacdPoint {
+  final int index;
+  final double? macd;
+  final double? signal;
+  final double? histogram;
+  MacdPoint({required this.index, this.macd, this.signal, this.histogram});
+}
+
+/// 布林带历史序列
+class BollingerPoint {
+  final int index;
+  final double? upper;
+  final double? middle;
+  final double? lower;
+  BollingerPoint({required this.index, this.upper, this.middle, this.lower});
+}
+
+/// KDJ 历史序列点
+class KdjPoint {
+  final int index;
+  final double? k;
+  final double? d;
+  final double? j;
+  KdjPoint({required this.index, this.k, this.d, this.j});
+}
+
+/// 分析完整图表数据
+class ChartData {
+  final List<RsiPoint> rsiSeries;
+  final List<MacdPoint> macdSeries;
+  final List<BollingerPoint> bollingerSeries;
+  final List<KdjPoint> kdjSeries;
+
+  ChartData({
+    required this.rsiSeries,
+    required this.macdSeries,
+    required this.bollingerSeries,
+    required this.kdjSeries,
+  });
+}

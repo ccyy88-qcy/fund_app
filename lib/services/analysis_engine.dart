@@ -272,6 +272,78 @@ class AnalysisEngine {
     return maxRecDays > 0 ? maxRecDays : null;
   }
 
+  // ─── 图表序列 ───
+  /// RSI 历史序列（最近 N 个交易日）
+  static List<RsiPoint> calcRSISeries(List<double> closes, {int period = 14, int maxPoints = 60}) {
+    if (closes.length < period + 1) return [];
+    final start = max(0, closes.length - maxPoints - period);
+    final pts = <RsiPoint>[];
+    for (int i = start + period; i < closes.length; i++) {
+      final rsi = calcRSI(closes.sublist(0, i + 1), period: period);
+      if (rsi != null) pts.add(RsiPoint(index: i - start, value: rsi));
+    }
+    return pts;
+  }
+
+  /// MACD 历史序列
+  static List<MacdPoint> calcMACDSeries(List<double> closes, {int maxPoints = 60}) {
+    if (closes.length < 35) return [];
+    final start = max(0, closes.length - maxPoints - 26);
+    final pts = <MacdPoint>[];
+    for (int i = start + 26; i < closes.length; i++) {
+      final sub = closes.sublist(0, i + 1);
+      final md = calcMACD(sub);
+      if (md != null) pts.add(MacdPoint(index: i - start, macd: md.macd, signal: md.signal, histogram: md.histogram));
+    }
+    return pts;
+  }
+
+  /// 布林带历史序列
+  static List<BollingerPoint> calcBollingerSeries(List<double> closes, {int period = 20, int maxPoints = 60}) {
+    if (closes.length < period) return [];
+    final start = max(0, closes.length - maxPoints);
+    final pts = <BollingerPoint>[];
+    for (int i = max(start + period, period); i < closes.length; i++) {
+      final sub = closes.sublist(i - period + 1, i + 1);
+      final ma = sub.reduce((a,b)=>a+b)/period;
+      final variance = sub.map((c)=> (c-ma)*(c-ma)).reduce((a,b)=>a+b)/period;
+      final std = sqrt(variance);
+      pts.add(BollingerPoint(index: i - start, upper: ma + 2*std, middle: ma, lower: ma - 2*std));
+    }
+    return pts;
+  }
+
+  /// KDJ 历史序列
+  static List<KdjPoint> calcKDJSeries(List<double> closes, {int n = 9, int maxPoints = 60}) {
+    if (closes.length < n) return [];
+    final start = max(0, closes.length - maxPoints);
+    final pts = <KdjPoint>[];
+    for (int i = max(start + n, n); i < closes.length; i++) {
+      final sub = closes.sublist(i - n + 1, i + 1);
+      final hh = sub.reduce(max);
+      final ll = sub.reduce(min);
+      final range = hh - ll;
+      if (range > 0) {
+        final rsv = (sub.last - ll) / range * 100;
+        final k = (2.0/3)*50 + (1.0/3)*rsv;
+        final d = (2.0/3)*50 + (1.0/3)*k;
+        final j = 3*k - 2*d;
+        pts.add(KdjPoint(index: i - start, k: k, d: d, j: j));
+      }
+    }
+    return pts;
+  }
+
+  /// 生成完整图表数据
+  static ChartData buildChartData(List<double> closes) {
+    return ChartData(
+      rsiSeries: calcRSISeries(closes),
+      macdSeries: calcMACDSeries(closes),
+      bollingerSeries: calcBollingerSeries(closes),
+      kdjSeries: calcKDJSeries(closes),
+    );
+  }
+
   // ─── 量比 / 回落 ───
   static double? calcVolumeRatio(List<KlineData> kline) {
     if (kline.length < 21) return null;
@@ -369,6 +441,9 @@ class AnalysisEngine {
 
     // 年度回报
     final yearlyReturns = calcYearlyReturns(navData);
+    
+    // 图表数据
+    final chartData = buildChartData(closes);
 
     // 回报（优先用API数据，与东方财富/支付宝一致）
     final ret1m = apiRet1m ?? calcReturn(closes, 22);
@@ -444,6 +519,7 @@ class AnalysisEngine {
       recoveryDays: recoveryDays,
       yearlyReturns: yearlyReturns,
       holdings: holdings,
+      chartData: chartData,
       isFromNetwork: navData.isNotEmpty && navData.length > 5,
     );
   }

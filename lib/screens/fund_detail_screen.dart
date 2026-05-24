@@ -708,6 +708,7 @@ class FundDetailScreen extends StatelessWidget {
   Widget _buildRsiCard(BuildContext context, FundAnalysis a) {
     if (a.rsi == null) return const SizedBox();
     final rsi = a.rsi!;
+    final series = a.chartData?.rsiSeries ?? [];
     Color color;
     String label;
     if (rsi >= 70) { color = Colors.red; label = '超买'; }
@@ -717,21 +718,19 @@ class FundDetailScreen extends StatelessWidget {
       decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), border: Border.all(color: color.withValues(alpha:0.2)), gradient: LinearGradient(colors: [color.withValues(alpha:0.05), Colors.white], begin: Alignment.topLeft, end: Alignment.bottomRight)),
       padding: const EdgeInsets.all(16),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [Icon(Icons.speed, size:16, color:color), SizedBox(width:6), const Text('RSI 指标', style: TextStyle(fontSize:14, fontWeight:FontWeight.w600, color:Color(0xFF1A3C6E)))]),
-        const SizedBox(height:8),
-        Row(children: [
-          Container(
-            width: 60, height: 60,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: color.withValues(alpha:0.1), border: Border.all(color: color, width:2)),
-            child: Center(child: Text(rsi.toStringAsFixed(1), style: TextStyle(fontSize:18, fontWeight:FontWeight.bold, color:color))),
-          ),
-          const SizedBox(width:12),
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('RSI(14): $label', style: TextStyle(fontSize:13, fontWeight:FontWeight.w600, color:color)),
-            const SizedBox(height:4),
-            Text(rsi >= 70 ? '⚠️ 短期超买，注意回调风险' : (rsi <= 30 ? '💎 短期超卖，关注反弹机会' : '📊 中性区间，趋势平稳'), style: TextStyle(fontSize:11, color:Colors.grey[500])),
-          ]),
-        ]),
+        Row(children: [Icon(Icons.speed, size:16, color:color), SizedBox(width:6), Text('RSI(14)  $rsi  $label', style: TextStyle(fontSize:14, fontWeight:FontWeight.w600, color:Color(0xFF1A3C6E)))]),
+        if (series.length >= 5) ...[
+          const SizedBox(height:8),
+          SizedBox(height:130, child: _buildChart(series.map((p)=>FlSpot(p.index.toDouble(), p.value)).toList(),
+            lineColor: color, yMin: 0, yMax: 100,
+            extraLines: [
+              LineChartBarData(spots:[FlSpot(0,70),FlSpot(series.last.index.toDouble(),70)], color:Colors.red.withValues(alpha:0.3), barWidth:1, dotData:FlDotData(show:false)),
+              LineChartBarData(spots:[FlSpot(0,30),FlSpot(series.last.index.toDouble(),30)], color:Colors.green.withValues(alpha:0.3), barWidth:1, dotData:FlDotData(show:false)),
+            ],
+          )),
+        ],
+        const SizedBox(height:4),
+        Text(rsi >= 70 ? '⚠️ 短期超买，注意回调风险' : (rsi <= 30 ? '💎 短期超卖，关注反弹机会' : '📊 中性区间，趋势平稳'), style: TextStyle(fontSize:11, color:Colors.grey[500])),
       ]),
     );
   }
@@ -739,19 +738,22 @@ class FundDetailScreen extends StatelessWidget {
   Widget _buildMacdCard(BuildContext context, FundAnalysis a) {
     if (a.macd == null) return const SizedBox();
     final m = a.macd!;
+    final series = a.chartData?.macdSeries ?? [];
     final isBull = m.histogram != null && m.histogram! > 0;
-    final color = isBull ? Colors.green : Colors.red;
     return Container(
       decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFF1565C0).withValues(alpha:0.2)), gradient: LinearGradient(colors: [const Color(0xFF1565C0).withValues(alpha:0.05), Colors.white], begin: Alignment.topLeft, end: Alignment.bottomRight)),
       padding: const EdgeInsets.all(16),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [Icon(Icons.show_chart, size:16, color:const Color(0xFF1565C0)), SizedBox(width:6), const Text('MACD', style: TextStyle(fontSize:14, fontWeight:FontWeight.w600, color:Color(0xFF1A3C6E)))]),
-        const SizedBox(height:10),
-        _metricRow('MACD', m.macd?.toStringAsFixed(4) ?? '—', color),
+        Row(children: [Icon(Icons.show_chart, size:16, color:const Color(0xFF1565C0)), SizedBox(width:6), const Text('MACD(12,26,9)', style: TextStyle(fontSize:14, fontWeight:FontWeight.w600, color:Color(0xFF1A3C6E)))]),
+        if (series.length >= 5) ...[
+          const SizedBox(height:8),
+          SizedBox(height:140, child: _buildMacdChart(series)),
+        ],
+        const SizedBox(height:6),
+        _metricRow('MACD', m.macd?.toStringAsFixed(4) ?? '—', const Color(0xFF1565C0)),
         _metricRow('信号线', m.signal?.toStringAsFixed(4) ?? '—', Colors.orange),
         _metricRow('柱状图', m.histogram?.toStringAsFixed(4) ?? '—', isBull ? Colors.green : Colors.red),
-        const SizedBox(height:4),
-        Text(isBull ? '📈 多头信号（MACD > 信号线）' : '📉 空头信号（MACD < 信号线）', style: TextStyle(fontSize:11, color:Colors.grey[500])),
+        Text(isBull ? '📈 多头信号' : '📉 空头信号', style: TextStyle(fontSize:11, color:Colors.grey[500])),
       ]),
     );
   }
@@ -759,9 +761,9 @@ class FundDetailScreen extends StatelessWidget {
   Widget _buildBollingerCard(BuildContext context, FundAnalysis a) {
     if (a.bollinger == null) return const SizedBox();
     final b = a.bollinger!;
+    final series = a.chartData?.bollingerSeries ?? [];
     final nav = a.latestNav;
-    String pos;
-    Color color;
+    String pos; Color color;
     if (nav != null && nav >= (b.upper ?? double.infinity)) { pos = '触及上轨'; color = Colors.red; }
     else if (nav != null && nav <= (b.lower ?? 0)) { pos = '触及下轨'; color = Colors.green; }
     else { pos = '轨道内运行'; color = Colors.blue; }
@@ -769,14 +771,17 @@ class FundDetailScreen extends StatelessWidget {
       decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), border: Border.all(color: color.withValues(alpha:0.2)), gradient: LinearGradient(colors: [color.withValues(alpha:0.05), Colors.white], begin: Alignment.topLeft, end: Alignment.bottomRight)),
       padding: const EdgeInsets.all(16),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [Icon(Icons.auto_graph, size:16, color:color), SizedBox(width:6), const Text('布林带', style: TextStyle(fontSize:14, fontWeight:FontWeight.w600, color:Color(0xFF1A3C6E)))]),
-        const SizedBox(height:10),
+        Row(children: [Icon(Icons.auto_graph, size:16, color:color), SizedBox(width:6), const Text('布林带(20,2)', style: TextStyle(fontSize:14, fontWeight:FontWeight.w600, color:Color(0xFF1A3C6E)))]),
+        if (series.length >= 5) ...[
+          const SizedBox(height:8),
+          SizedBox(height:140, child: _buildBollingerChart(series, a.navHistory?.map((n)=>n.nav).toList() ?? [])),
+        ],
+        const SizedBox(height:6),
         _metricRow('上轨', b.upper?.toStringAsFixed(4) ?? '—', Colors.red),
         _metricRow('中轨', b.middle?.toStringAsFixed(4) ?? '—', Colors.blue),
         _metricRow('下轨', b.lower?.toStringAsFixed(4) ?? '—', Colors.green),
         _metricRow('带宽%', b.bandwidth?.toStringAsFixed(2) ?? '—', Colors.grey),
-        const SizedBox(height:4),
-        Text('📊 $pos（带宽${b.bandwidth?.toStringAsFixed(1) ?? '?'}%）', style: TextStyle(fontSize:11, color:Colors.grey[500])),
+        Text('📊 $pos', style: TextStyle(fontSize:11, color:Colors.grey[500])),
       ]),
     );
   }
@@ -784,12 +789,17 @@ class FundDetailScreen extends StatelessWidget {
   Widget _buildKdjCard(BuildContext context, FundAnalysis a) {
     if (a.kdj == null) return const SizedBox();
     final k = a.kdj!;
+    final series = a.chartData?.kdjSeries ?? [];
     return Container(
       decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFF7B1FA2).withValues(alpha:0.2)), gradient: LinearGradient(colors: [const Color(0xFF7B1FA2).withValues(alpha:0.05), Colors.white], begin: Alignment.topLeft, end: Alignment.bottomRight)),
       padding: const EdgeInsets.all(16),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [Icon(Icons.graphic_eq, size:16, color:const Color(0xFF7B1FA2)), SizedBox(width:6), const Text('KDJ', style: TextStyle(fontSize:14, fontWeight:FontWeight.w600, color:Color(0xFF1A3C6E)))]),
-        const SizedBox(height:10),
+        Row(children: [Icon(Icons.graphic_eq, size:16, color:const Color(0xFF7B1FA2)), SizedBox(width:6), const Text('KDJ(9,3,3)', style: TextStyle(fontSize:14, fontWeight:FontWeight.w600, color:Color(0xFF1A3C6E)))]),
+        if (series.length >= 5) ...[
+          const SizedBox(height:8),
+          SizedBox(height:140, child: _buildKdjChart(series)),
+        ],
+        const SizedBox(height:6),
         Wrap(spacing:12, runSpacing:6, children: [
           _kdjChip('K', k.k, Colors.blue),
           _kdjChip('D', k.d, Colors.orange),
@@ -798,6 +808,103 @@ class FundDetailScreen extends StatelessWidget {
       ]),
     );
   }
+
+  /// 通用单线图
+  Widget _buildChart(List<FlSpot> spots, {required Color lineColor, double? yMin, double? yMax, List<LineChartBarData>? extraLines, bool fill = false}) {
+    if (spots.isEmpty) return const SizedBox();
+    final yVals = spots.map((s)=>s.y).toList();
+    final myMin = yMin ?? (yVals.reduce((a,b)=>a<b?a:b) * 0.95);
+    final myMax = yMax ?? (yVals.reduce((a,b)=>a>b?a:b) * 1.05);
+    final allBars = <LineChartBarData>[
+      LineChartBarData(spots: spots, isCurved: true, color: lineColor, barWidth: 1.8, dotData: FlDotData(show: false), belowBarData: fill ? BarAreaData(show:true, color: lineColor.withValues(alpha:0.08)) : BarAreaData(show:false)),
+      if (extraLines != null) ...extraLines,
+    ];
+    return LineChart(LineChartData(
+      gridData: FlGridData(show: true, drawHorizontalLine: true, drawVerticalLine: false, horizontalInterval: (myMax-myMin)/4, getDrawingHorizontalLine: (v)=>FlLine(color: Colors.grey.withValues(alpha:0.1), strokeWidth:0.5)),
+      titlesData: FlTitlesData(leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 28, getTitlesWidget: (v,_)=>Text(v.toStringAsFixed(0), style: TextStyle(fontSize:8, color:Colors.grey[500])))), bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)), topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)), rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false))),
+      borderData: FlBorderData(show: false),
+      minX: spots.first.x, maxX: spots.last.x, minY: myMin, maxY: myMax,
+      lineBarsData: allBars,
+    ));
+  }
+
+  /// MACD 多线图（MACD线+信号线+柱状图）
+  Widget _buildMacdChart(List<MacdPoint> series) {
+    final macdSpots = <FlSpot>[];
+    final sigSpots = <FlSpot>[];
+    final barSpots = <BarChartGroupData>[];
+    for (final p in series) {
+      if (p.macd != null) macdSpots.add(FlSpot(p.index.toDouble(), p.macd!));
+      if (p.signal != null) sigSpots.add(FlSpot(p.index.toDouble(), p.signal!));
+    }
+    if (macdSpots.isEmpty) return const SizedBox();
+    final allY = macdSpots.map((s)=>s.y).followedBy(sigSpots.map((s)=>s.y)).toList();
+    final myMin = allY.reduce((a,b)=>a<b?a:b) * 1.2;
+    final myMax = allY.reduce((a,b)=>a>b?a:b) * 1.2;
+    return LineChart(LineChartData(
+      gridData: FlGridData(show: true, drawHorizontalLine: true, drawVerticalLine: false, getDrawingHorizontalLine: (v)=>FlLine(color: Colors.grey.withValues(alpha:0.1), strokeWidth:0.5)),
+      titlesData: FlTitlesData(leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 32, getTitlesWidget: (v,_)=>Text(v.toStringAsFixed(2), style: TextStyle(fontSize:8, color:Colors.grey[500])))), bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)), topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)), rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false))),
+      borderData: FlBorderData(show: false),
+      lineBarsData: [
+        LineChartBarData(spots: macdSpots, isCurved: true, color: const Color(0xFF1565C0), barWidth: 1.5, dotData: FlDotData(show: false)),
+        LineChartBarData(spots: sigSpots, isCurved: true, color: Colors.orange, barWidth: 1.5, dotData: FlDotData(show: false)),
+      ],
+      minX: series.first.index.toDouble(), maxX: series.last.index.toDouble(), minY: myMin, maxY: myMax,
+    ));
+  }
+
+  /// 布林带三线图 + 净值线
+  Widget _buildBollingerChart(List<BollingerPoint> bSeries, List<double> closes) {
+    if (bSeries.isEmpty) return const SizedBox();
+    final upper = bSeries.where((p)=>p.upper!=null).map((p)=>FlSpot(p.index.toDouble(), p.upper!)).toList();
+    final mid = bSeries.where((p)=>p.middle!=null).map((p)=>FlSpot(p.index.toDouble(), p.middle!)).toList();
+    final lower = bSeries.where((p)=>p.lower!=null).map((p)=>FlSpot(p.index.toDouble(), p.lower!)).toList();
+    // 配对的净值线
+    final startIdx = bSeries.first.index;
+    final navSpots = <FlSpot>[];
+    for (int i = startIdx; i < closes.length && navSpots.length < bSeries.length; i++) {
+      navSpots.add(FlSpot(i.toDouble(), closes[i]));
+    }
+    if (upper.isEmpty) return const SizedBox();
+    final allY = [...upper.map((s)=>s.y), ...lower.map((s)=>s.y)];
+    return LineChart(LineChartData(
+      gridData: FlGridData(show: true, drawHorizontalLine: true, drawVerticalLine: false, getDrawingHorizontalLine: (v)=>FlLine(color: Colors.grey.withValues(alpha:0.1), strokeWidth:0.5)),
+      titlesData: FlTitlesData(leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 32, getTitlesWidget: (v,_)=>Text(v.toStringAsFixed(2), style: TextStyle(fontSize:8, color:Colors.grey[500])))), bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)), topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)), rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false))),
+      borderData: FlBorderData(show: false),
+      lineBarsData: [
+        LineChartBarData(spots: upper, isCurved: true, color: Colors.red.withValues(alpha:0.5), barWidth: 1, dotData: FlDotData(show: false)),
+        LineChartBarData(spots: mid, isCurved: true, color: Colors.blue.withValues(alpha:0.5), barWidth: 1, dotData: FlDotData(show: false)),
+        LineChartBarData(spots: lower, isCurved: true, color: Colors.green.withValues(alpha:0.5), barWidth: 1, dotData: FlDotData(show: false)),
+        LineChartBarData(spots: navSpots, isCurved: true, color: Colors.black87, barWidth: 1.8, dotData: FlDotData(show: false)),
+      ],
+      minX: bSeries.first.index.toDouble(), maxX: bSeries.last.index.toDouble(),
+      minY: allY.reduce((a,b)=>a<b?a:b) * 0.98, maxY: allY.reduce((a,b)=>a>b?a:b) * 1.02,
+    ));
+  }
+
+  /// KDJ 三线图
+  Widget _buildKdjChart(List<KdjPoint> series) {
+    if (series.isEmpty) return const SizedBox();
+    final kSpots = series.where((p)=>p.k!=null).map((p)=>FlSpot(p.index.toDouble(), p.k!)).toList();
+    final dSpots = series.where((p)=>p.d!=null).map((p)=>FlSpot(p.index.toDouble(), p.d!)).toList();
+    final jSpots = series.where((p)=>p.j!=null).map((p)=>FlSpot(p.index.toDouble(), p.j!)).toList();
+    return LineChart(LineChartData(
+      gridData: FlGridData(show: true, drawHorizontalLine: true, drawVerticalLine: false, getDrawingHorizontalLine: (v)=>FlLine(color: Colors.grey.withValues(alpha:0.1), strokeWidth:0.5)),
+      titlesData: FlTitlesData(leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 28, getTitlesWidget: (v,_)=>Text(v.toStringAsFixed(0), style: TextStyle(fontSize:8, color:Colors.grey[500])))), bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)), topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)), rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false))),
+      borderData: FlBorderData(show: false),
+      lineBarsData: [
+        LineChartBarData(spots: kSpots, isCurved: true, color: Colors.blue, barWidth: 1.5, dotData: FlDotData(show: false)),
+        LineChartBarData(spots: dSpots, isCurved: true, color: Colors.orange, barWidth: 1.5, dotData: FlDotData(show: false)),
+        LineChartBarData(spots: jSpots, isCurved: true, color: Colors.grey, barWidth: 1.5, dotData: FlDotData(show: false)),
+      ],
+      minX: series.first.index.toDouble(), maxX: series.last.index.toDouble(), minY: -50, maxY: 150,
+      extraLinesData: ExtraLinesData(horizontalLines: [
+        HorizontalLine(y: 100, color: Colors.red.withValues(alpha:0.2), strokeWidth: 0.5),
+        HorizontalLine(y: 0, color: Colors.green.withValues(alpha:0.2), strokeWidth: 0.5),
+      ]),
+    ));
+  }
+
   Widget _kdjChip(String label, double? val, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal:14, vertical:8),
