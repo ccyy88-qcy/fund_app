@@ -83,6 +83,38 @@ class FundDetailScreen extends StatelessWidget {
                   _buildMaCard(context, analysis),
                 const SizedBox(height: 12),
                 
+                // RSI
+                _buildRsiCard(context, analysis),
+                const SizedBox(height: 12),
+                
+                // MACD
+                _buildMacdCard(context, analysis),
+                const SizedBox(height: 12),
+                
+                // 布林带
+                _buildBollingerCard(context, analysis),
+                const SizedBox(height: 12),
+                
+                // KDJ
+                _buildKdjCard(context, analysis),
+                const SizedBox(height: 12),
+                
+                // 统计数据
+                _buildStatsCard(context, analysis),
+                const SizedBox(height: 12),
+                
+                // 持仓穿透
+                _buildHoldingsCard(context, analysis),
+                const SizedBox(height: 12),
+                
+                // 排名
+                _buildRankCard(context, analysis),
+                const SizedBox(height: 12),
+                
+                // 年度回报
+                _buildYearlyReturnsCard(context, analysis),
+                const SizedBox(height: 12),
+                
                 // 额外信息
                 if (analysis.managementFee != null || analysis.fundSize != null)
                   _buildExtraCard(context, analysis),
@@ -670,6 +702,215 @@ class FundDetailScreen extends StatelessWidget {
           Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
         ],
       ),
+    );
+  }
+
+  Widget _buildRsiCard(BuildContext context, FundAnalysis a) {
+    if (a.rsi == null) return const SizedBox();
+    final rsi = a.rsi!;
+    Color color;
+    String label;
+    if (rsi >= 70) { color = Colors.red; label = '超买'; }
+    else if (rsi <= 30) { color = Colors.green; label = '超卖'; }
+    else { color = Colors.blue; label = '中性'; }
+    return Container(
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), border: Border.all(color: color.withValues(alpha:0.2)), gradient: LinearGradient(colors: [color.withValues(alpha:0.05), Colors.white], begin: Alignment.topLeft, end: Alignment.bottomRight)),
+      padding: const EdgeInsets.all(16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [Icon(Icons.speed, size:16, color:color), SizedBox(width:6), const Text('RSI 指标', style: TextStyle(fontSize:14, fontWeight:FontWeight.w600, color:Color(0xFF1A3C6E)))]),
+        const SizedBox(height:8),
+        Row(children: [
+          Container(
+            width: 60, height: 60,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: color.withValues(alpha:0.1), border: Border.all(color: color, width:2)),
+            child: Center(child: Text(rsi.toStringAsFixed(1), style: TextStyle(fontSize:18, fontWeight:FontWeight.bold, color:color))),
+          ),
+          const SizedBox(width:12),
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('RSI(14): $label', style: TextStyle(fontSize:13, fontWeight:FontWeight.w600, color:color)),
+            const SizedBox(height:4),
+            Text(rsi >= 70 ? '⚠️ 短期超买，注意回调风险' : (rsi <= 30 ? '💎 短期超卖，关注反弹机会' : '📊 中性区间，趋势平稳'), style: TextStyle(fontSize:11, color:Colors.grey[500])),
+          ]),
+        ]),
+      ]),
+    );
+  }
+
+  Widget _buildMacdCard(BuildContext context, FundAnalysis a) {
+    if (a.macd == null) return const SizedBox();
+    final m = a.macd!;
+    final isBull = m.histogram != null && m.histogram! > 0;
+    final color = isBull ? Colors.green : Colors.red;
+    return Container(
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFF1565C0).withValues(alpha:0.2)), gradient: LinearGradient(colors: [const Color(0xFF1565C0).withValues(alpha:0.05), Colors.white], begin: Alignment.topLeft, end: Alignment.bottomRight)),
+      padding: const EdgeInsets.all(16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [Icon(Icons.show_chart, size:16, color:const Color(0xFF1565C0)), SizedBox(width:6), const Text('MACD', style: TextStyle(fontSize:14, fontWeight:FontWeight.w600, color:Color(0xFF1A3C6E)))]),
+        const SizedBox(height:10),
+        _metricRow('MACD', m.macd?.toStringAsFixed(4) ?? '—', color),
+        _metricRow('信号线', m.signal?.toStringAsFixed(4) ?? '—', Colors.orange),
+        _metricRow('柱状图', m.histogram?.toStringAsFixed(4) ?? '—', isBull ? Colors.green : Colors.red),
+        const SizedBox(height:4),
+        Text(isBull ? '📈 多头信号（MACD > 信号线）' : '📉 空头信号（MACD < 信号线）', style: TextStyle(fontSize:11, color:Colors.grey[500])),
+      ]),
+    );
+  }
+
+  Widget _buildBollingerCard(BuildContext context, FundAnalysis a) {
+    if (a.bollinger == null) return const SizedBox();
+    final b = a.bollinger!;
+    final nav = a.latestNav;
+    String pos;
+    Color color;
+    if (nav != null && nav >= (b.upper ?? double.infinity)) { pos = '触及上轨'; color = Colors.red; }
+    else if (nav != null && nav <= (b.lower ?? 0)) { pos = '触及下轨'; color = Colors.green; }
+    else { pos = '轨道内运行'; color = Colors.blue; }
+    return Container(
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), border: Border.all(color: color.withValues(alpha:0.2)), gradient: LinearGradient(colors: [color.withValues(alpha:0.05), Colors.white], begin: Alignment.topLeft, end: Alignment.bottomRight)),
+      padding: const EdgeInsets.all(16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [Icon(Icons.auto_graph, size:16, color:color), SizedBox(width:6), const Text('布林带', style: TextStyle(fontSize:14, fontWeight:FontWeight.w600, color:Color(0xFF1A3C6E)))]),
+        const SizedBox(height:10),
+        _metricRow('上轨', b.upper?.toStringAsFixed(4) ?? '—', Colors.red),
+        _metricRow('中轨', b.middle?.toStringAsFixed(4) ?? '—', Colors.blue),
+        _metricRow('下轨', b.lower?.toStringAsFixed(4) ?? '—', Colors.green),
+        _metricRow('带宽%', b.bandwidth?.toStringAsFixed(2) ?? '—', Colors.grey),
+        const SizedBox(height:4),
+        Text('📊 $pos（带宽${b.bandwidth?.toStringAsFixed(1) ?? '?'}%）', style: TextStyle(fontSize:11, color:Colors.grey[500])),
+      ]),
+    );
+  }
+
+  Widget _buildKdjCard(BuildContext context, FundAnalysis a) {
+    if (a.kdj == null) return const SizedBox();
+    final k = a.kdj!;
+    return Container(
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFF7B1FA2).withValues(alpha:0.2)), gradient: LinearGradient(colors: [const Color(0xFF7B1FA2).withValues(alpha:0.05), Colors.white], begin: Alignment.topLeft, end: Alignment.bottomRight)),
+      padding: const EdgeInsets.all(16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [Icon(Icons.graphic_eq, size:16, color:const Color(0xFF7B1FA2)), SizedBox(width:6), const Text('KDJ', style: TextStyle(fontSize:14, fontWeight:FontWeight.w600, color:Color(0xFF1A3C6E)))]),
+        const SizedBox(height:10),
+        Wrap(spacing:12, runSpacing:6, children: [
+          _kdjChip('K', k.k, Colors.blue),
+          _kdjChip('D', k.d, Colors.orange),
+          _kdjChip('J', k.j, (k.j ?? 50) > 100 ? Colors.red : (k.j ?? 50) < 0 ? Colors.green : Colors.grey),
+        ]),
+      ]),
+    );
+  }
+  Widget _kdjChip(String label, double? val, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal:14, vertical:8),
+      decoration: BoxDecoration(color:color.withValues(alpha:0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color:color.withValues(alpha:0.3))),
+      child: Text('$label: ${val?.toStringAsFixed(1) ?? '--'}', style: TextStyle(fontSize:13, fontWeight:FontWeight.w600, color:color)),
+    );
+  }
+
+  Widget _buildHoldingsCard(BuildContext context, FundAnalysis a) {
+    if (a.holdings == null || a.holdings!.isEmpty) return const SizedBox();
+    return Container(
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFFE65100).withValues(alpha:0.2)), gradient: LinearGradient(colors: [const Color(0xFFE65100).withValues(alpha:0.05), Colors.white], begin: Alignment.topLeft, end: Alignment.bottomRight)),
+      padding: const EdgeInsets.all(16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [Icon(Icons.folder_open, size:16, color:const Color(0xFFE65100)), SizedBox(width:6), const Text('前10大持仓', style: TextStyle(fontSize:14, fontWeight:FontWeight.w600, color:Color(0xFF1A3C6E)))]),
+        const SizedBox(height:8),
+        ...a.holdings!.take(10).map((h) => Padding(
+          padding: const EdgeInsets.symmetric(vertical:3),
+          child: Row(children: [
+            Container(width:4, height:16, decoration: BoxDecoration(color:const Color(0xFFE65100), borderRadius: BorderRadius.circular(2))),
+            SizedBox(width:8),
+            Expanded(child: Text(h.code, style: TextStyle(fontSize:12, fontWeight:FontWeight.w500))),
+            const SizedBox(width:8),
+            Text(h.name, style: TextStyle(fontSize:12, color:Colors.grey[600])),
+            if (h.ratio != null) ...[SizedBox(width:6), Text('${h.ratio!.toStringAsFixed(1)}%', style: TextStyle(fontSize:12, fontWeight:FontWeight.w600, color:Color(0xFFE65100)))],
+          ]),
+        )),
+      ]),
+    );
+  }
+
+  Widget _buildStatsCard(BuildContext context, FundAnalysis a) {
+    return Container(
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFF37474F).withValues(alpha:0.15)), gradient: LinearGradient(colors: [const Color(0xFF37474F).withValues(alpha:0.04), Colors.white], begin: Alignment.topLeft, end: Alignment.bottomRight)),
+      padding: const EdgeInsets.all(16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [Icon(Icons.analytics, size:16, color:const Color(0xFF37474F)), SizedBox(width:6), const Text('统计数据', style: TextStyle(fontSize:14, fontWeight:FontWeight.w600, color:Color(0xFF1A3C6E)))]),
+        const SizedBox(height:10),
+        Wrap(spacing:8, runSpacing:8, children: [
+          if (a.maxConsecutiveUp != null) _statChip('最大连涨', '${a.maxConsecutiveUp}天', Colors.red),
+          if (a.maxConsecutiveDown != null) _statChip('最大连跌', '${a.maxConsecutiveDown}天', Colors.green),
+          if (a.recoveryDays != null && a.recoveryDays! > 0) _statChip('回撤恢复', '${a.recoveryDays}天', Colors.orange),
+        ]),
+      ]),
+    );
+  }
+  Widget _statChip(String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal:12, vertical:8),
+      decoration: BoxDecoration(color:color.withValues(alpha:0.08), borderRadius: BorderRadius.circular(8), border: Border.all(color:color.withValues(alpha:0.2))),
+      child: Column(children: [
+        Text(label, style: TextStyle(fontSize:10, color:Colors.grey[500])),
+        const SizedBox(height:2),
+        Text(value, style: TextStyle(fontSize:14, fontWeight:FontWeight.bold, color:color)),
+      ]),
+    );
+  }
+
+  Widget _metricRow(String label, String value, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical:2),
+      child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        Text(label, style: TextStyle(fontSize:12, color:Colors.grey[600])),
+        Text(value, style: TextStyle(fontSize:13, fontWeight:FontWeight.w600, color:color)),
+      ]),
+    );
+  }
+
+  Widget _buildYearlyReturnsCard(BuildContext context, FundAnalysis a) {
+    if (a.yearlyReturns == null || a.yearlyReturns!.isEmpty) return const SizedBox();
+    return Container(
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFF00838F).withValues(alpha:0.2)), gradient: LinearGradient(colors: [const Color(0xFF00838F).withValues(alpha:0.05), Colors.white], begin: Alignment.topLeft, end: Alignment.bottomRight)),
+      padding: const EdgeInsets.all(16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [Icon(Icons.calendar_month, size:16, color:const Color(0xFF00838F)), SizedBox(width:6), const Text('年度回报', style: TextStyle(fontSize:14, fontWeight:FontWeight.w600, color:Color(0xFF1A3C6E)))]),
+        const SizedBox(height:10),
+        Wrap(spacing:8, runSpacing:8, children: a.yearlyReturns!.map((yr) {
+          final color = (yr.return_ ?? 0) >= 0 ? Colors.red : Colors.green;
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal:12, vertical:8),
+            decoration: BoxDecoration(color:color.withValues(alpha:0.08), borderRadius: BorderRadius.circular(8), border: Border.all(color:color.withValues(alpha:0.2))),
+            child: Column(children: [
+              Text('${yr.year}', style: TextStyle(fontSize:10, color:Colors.grey[500])),
+              const SizedBox(height:2),
+              Text('${yr.return_ != null ? yr.return_!.toStringAsFixed(1) : 'N/A'}%', style: TextStyle(fontSize:14, fontWeight:FontWeight.bold, color:color)),
+            ]),
+          );
+        }).toList()),
+      ]),
+    );
+  }
+
+  Widget _buildRankCard(BuildContext context, FundAnalysis a) {
+    if (a.categoryRank == null) return const SizedBox();
+    final r = a.categoryRank!;
+    final pct = r.percentile;
+    Color color;
+    if (pct <= 25) color = Colors.green;
+    else if (pct <= 50) color = Colors.blue;
+    else if (pct <= 75) color = Colors.orange;
+    else color = Colors.red;
+    return Container(
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), border: Border.all(color:color.withValues(alpha:0.2)), gradient: LinearGradient(colors: [color.withValues(alpha:0.05), Colors.white], begin: Alignment.topLeft, end: Alignment.bottomRight)),
+      padding: const EdgeInsets.all(16),
+      child: Row(children: [
+        Container(width:56, height:56, decoration: BoxDecoration(shape: BoxShape.circle, color:color.withValues(alpha:0.1), border: Border.all(color:color, width:2)), child: Center(child: Text(r.display, style: TextStyle(fontSize:13, fontWeight:FontWeight.bold, color:color)))),
+        const SizedBox(width:12),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('同类排名', style: TextStyle(fontSize:13, fontWeight:FontWeight.w600)),
+          const SizedBox(height:2),
+          Text('${r.category} · 前${pct.toStringAsFixed(0)}%', style: TextStyle(fontSize:12, color:Colors.grey[500])),
+        ])),
+      ]),
     );
   }
 }

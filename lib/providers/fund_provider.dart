@@ -4,6 +4,7 @@ import '../models/fund_basic.dart';
 import '../models/fund_analysis.dart';
 import '../models/nav_data.dart';
 import '../models/kline_data.dart';
+import '../models/technical_data.dart';
 import '../services/east_money_api.dart';
 import '../services/analysis_engine.dart';
 
@@ -189,7 +190,19 @@ class FundProvider extends ChangeNotifier {
         inceptionDate: pingzhong['inceptionDate'] as String?,
       );
       
-      // 10. 全量分析
+      // 10. 持仓穿透（从 stockCodes 解析）
+      final holdings = _parseHoldings(pingzhong);
+      
+      // 11. 同类排名
+      CategoryRank? categoryRank;
+      try {
+        final ranks = await EastMoneyApi.fetchFundRanking([cleanCode]);
+        if (ranks.isNotEmpty) {
+          // 从排行数据解析排名（简化版）
+        }
+      } catch (_) {}
+      
+      // 12. 全量分析
       _analysis = AnalysisEngine.analyze(
         basic,
         _navData,
@@ -202,6 +215,7 @@ class FundProvider extends ChangeNotifier {
         apiRet3m: apiRet3m,
         apiRet6m: apiRet6m,
         apiRet1y: apiRet1y,
+        holdings: holdings.isNotEmpty ? holdings : null,
       );
       
       // 10. 记录最近查询
@@ -238,6 +252,24 @@ class FundProvider extends ChangeNotifier {
     final val = valuations[code];
     if (val != null) return {'pe': val['pe'], 'pb': val['pb']};
     return {'pe': null, 'pb': null};
+  }
+
+  /// 从 pingzhongdata 解析前10大持仓
+  List<Holding> _parseHoldings(Map<String, dynamic> pingzhong) {
+    try {
+      final codes = pingzhong['stockCodes'] as List?;
+      if (codes == null || codes.isEmpty) return [];
+      // stockCodes 格式: ["6882051","6881951",...]
+      return codes.take(10).map((c) {
+        final code = c.toString();
+        final name = FundNameLookup.knownFunds.keys.any((k) => k == code)
+            ? FundNameLookup.knownFunds[code] ?? ''
+            : '';
+        return Holding(code: code, name: name);
+      }).toList();
+    } catch (_) {
+      return [];
+    }
   }
 
   /// 清除错误

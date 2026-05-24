@@ -3,6 +3,7 @@ import '../models/fund_analysis.dart';
 import '../models/fund_basic.dart';
 import '../models/nav_data.dart';
 import '../models/kline_data.dart';
+import '../models/technical_data.dart';
 
 /// 基金分析引擎 - 移植自Python fund_report_v4.py + build_report_v4.py
 class AnalysisEngine {
@@ -151,6 +152,126 @@ class AnalysisEngine {
     return (tps.last - sma) / (0.015 * md);
   }
 
+  // ─── RSI(14) ───
+  static double? calcRSI(List<double> closes, {int period = 14}) {
+    if (closes.length < period + 1) return null;
+    double gain = 0, loss = 0;
+    for (int i = closes.length - period; i < closes.length; i++) {
+      final diff = closes[i] - closes[i - 1];
+      if (diff > 0) gain += diff; else loss -= diff;
+    }
+    if (loss == 0) return 100;
+    final rs = gain / loss;
+    return 100 - (100 / (1 + rs));
+  }
+
+  // ─── MACD(12,26,9) ───
+  static double _ema(List<double> data, int period) {
+    if (data.length < period) return data.last;
+    final multiplier = 2.0 / (period + 1);
+    double ema = data.sublist(0, period).reduce((a,b)=>a+b)/period;
+    for (int i = period; i < data.length; i++) { ema = (data[i] - ema) * multiplier + ema; }
+    return ema;
+  }
+
+  static MacdData? calcMACD(List<double> closes) {
+    if (closes.length < 35) return null;
+    final ema12 = _ema(closes, 12);
+    final ema26 = _ema(closes, 26);
+    final macdVal = ema12 - ema26;
+    // Signal: EMA9 of MACD values - simplified
+    final macdVals = <double>[];
+    for (int i = 26; i < closes.length; i++) {
+      final e12 = _ema(closes.sublist(0, i+1), 12);
+      final e26 = _ema(closes.sublist(0, i+1), 26);
+      macdVals.add(e12 - e26);
+    }
+    final signal = macdVals.length >= 9 ? _ema(macdVals, 9) : macdVal;
+    return MacdData(macd: macdVal, signal: signal, histogram: macdVal - signal);
+  }
+
+  // ─── 布林带(20,2) ───
+  static BollingerData? calcBollinger(List<double> closes) {
+    if (closes.length < 20) return null;
+    final subset = closes.sublist(closes.length - 20);
+    final ma = subset.reduce((a,b)=>a+b)/20;
+    final variance = subset.map((c)=> (c-ma)*(c-ma)).reduce((a,b)=>a+b)/20;
+    final std = sqrt(variance);
+    final upper = ma + 2*std;
+    final lower = ma - 2*std;
+    final bw = ma > 0 ? (upper-lower)/ma*100 : 0;
+    return BollingerData(upper: upper, middle: ma, lower: lower, bandwidth: bw);
+  }
+
+  // ─── KDJ(9,3,3) ───
+  static KdjData? calcKDJ(List<double> closes, {int n=9, int k1=3, int d1=3}) {
+    if (closes.length < n) return null;
+    final subset = closes.sublist(closes.length - n);
+    final hh = subset.reduce(max);
+    final ll = subset.reduce(min);
+    final close = subset.last;
+    final range = hh - ll;
+    if (range == 0) return KdjData(k: 50, d: 50, j: 50);
+    final rsv = (close - ll) / range * 100;
+    final k = (2.0/3)*50 + (1.0/3)*rsv;
+    final d = (2.0/3)*50 + (1.0/3)*k;
+    final j = 3*k - 2*d;
+    return KdjData(k: k, d: d, j: j);
+  }
+
+  // ─── 最大连涨/跌天数 ───
+  static int calcMaxConsecutiveUp(List<double> closes) {
+    int maxCnt = 0, cnt = 0;
+    for (int i = 1; i < closes.length; i++) {
+      if (closes[i] > closes[i-1]) { cnt++; maxCnt = max(maxCnt, cnt); }
+      else cnt = 0;
+    }
+    return maxCnt;
+  }
+
+  static int calcMaxConsecutiveDown(List<double> closes) {
+    int maxCnt = 0, cnt = 0;
+    for (int i = 1; i < closes.length; i++) {
+      if (closes[i] < closes[i-1]) { cnt++; maxCnt = max(maxCnt, cnt); }
+      else cnt = 0;
+    }
+    return maxCnt;
+  }
+
+  // ─── 年度回报 ───
+  static List<YearlyReturn> calcYearlyReturns(List<NavData> navData) {
+    final Map<int, List<double>> yearNavs = {};
+    for (final n in navData) {
+      final y = int.tryParse(n.date.substring(0,4));
+      if (y != null) { yearNavs.putIfAbsent(y, () => []).add(n.nav); }
+    }
+    final results = <YearlyReturn>[];
+    for (final y in yearNavs.keys.toList()..sort()) {
+      final vals = yearNavs[y]!;
+      if (vals.length >= 2) {
+        final ret = (vals.last / vals.first - 1) * 100;
+        results.add(YearlyReturn(year: y, return_: ret));
+      }
+    }
+    return results;
+  }
+
+  // ─── 回撤恢复天数 ───
+  static int? calcRecoveryDays(List<double> closes) {
+    if (closes.length < 30) return null;
+    double peak = closes[0];
+    int peakIdx = 0, maxRecDays = 0;
+    for (int i = 1; i < closes.length; i++) {
+      if (closes[i] > peak) {
+        peak = closes[i];
+        peakIdx = i;
+      } else if (closes[i] >= peak) {
+        maxRecDays = max(maxRecDays, i - peakIdx);
+      }
+    }
+    return maxRecDays > 0 ? maxRecDays : null;
+  }
+
   // ─── 量比 / 回落 ───
   static double? calcVolumeRatio(List<KlineData> kline) {
     if (kline.length < 21) return null;
@@ -215,7 +336,8 @@ class AnalysisEngine {
     {double? apiRet1m,
      double? apiRet3m,
      double? apiRet6m,
-     double? apiRet1y,}
+     double? apiRet1y,
+     List<Holding>? holdings,}
   ) {
     final closes = navData.map((n) => n.nav).toList();
     final isSame = klineData != null && klineData.length == navData.length;
@@ -227,6 +349,26 @@ class AnalysisEngine {
     final cci = klineData != null && klineData.length >= 20
         ? calcCCIWithKline(klineData)
         : calcCCI(closes);
+
+    // RSI
+    final rsi = calcRSI(closes);
+
+    // MACD
+    final macd = calcMACD(closes);
+
+    // 布林带
+    final bollinger = calcBollinger(closes);
+
+    // KDJ
+    final kdj = calcKDJ(closes);
+
+    // 统计
+    final maxConsecutiveUp = calcMaxConsecutiveUp(closes);
+    final maxConsecutiveDown = calcMaxConsecutiveDown(closes);
+    final recoveryDays = calcRecoveryDays(closes);
+
+    // 年度回报
+    final yearlyReturns = calcYearlyReturns(navData);
 
     // 回报（优先用API数据，与东方财富/支付宝一致）
     final ret1m = apiRet1m ?? calcReturn(closes, 22);
@@ -293,6 +435,15 @@ class AnalysisEngine {
       peGrade: peGrade, pbGrade: pbGrade,
       signal: signal,
       cci: cci,
+      rsi: rsi,
+      macd: macd,
+      bollinger: bollinger,
+      kdj: kdj,
+      maxConsecutiveUp: maxConsecutiveUp,
+      maxConsecutiveDown: maxConsecutiveDown,
+      recoveryDays: recoveryDays,
+      yearlyReturns: yearlyReturns,
+      holdings: holdings,
       isFromNetwork: navData.isNotEmpty && navData.length > 5,
     );
   }

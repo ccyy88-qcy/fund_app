@@ -1,6 +1,7 @@
 import 'fund_basic.dart';
 import 'nav_data.dart';
 import 'kline_data.dart';
+import 'technical_data.dart';
 
 /// 交易信号
 class TradeSignal {
@@ -123,6 +124,24 @@ class FundAnalysis {
   
   // 技术指标
   final double? cci; // CCI指标（周期20）
+  final double? rsi; // RSI(14)
+  final MacdData? macd;
+  final BollingerData? bollinger;
+  final KdjData? kdj;
+  
+  // 持仓穿透
+  final List<Holding>? holdings;
+  
+  // 排名
+  final CategoryRank? categoryRank;
+  
+  // 年度回报
+  final List<YearlyReturn>? yearlyReturns;
+  
+  // 统计
+  final int? maxConsecutiveUp;  // 最大连涨天数
+  final int? maxConsecutiveDown; // 最大连跌天数
+  final int? recoveryDays; // 回撤恢复天数
 
   FundAnalysis({
     required this.basic,
@@ -152,6 +171,16 @@ class FundAnalysis {
     this.managementFee,
     this.custodyFee,
     this.cci,
+    this.rsi,
+    this.macd,
+    this.bollinger,
+    this.kdj,
+    this.holdings,
+    this.categoryRank,
+    this.yearlyReturns,
+    this.maxConsecutiveUp,
+    this.maxConsecutiveDown,
+    this.recoveryDays,
     this.isFromNetwork = false,
   });
 
